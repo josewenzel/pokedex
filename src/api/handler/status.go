@@ -1,20 +1,28 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
+	"pokedex/src/api/security"
 )
 
-func StatusHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	_, err := url.Parse(request.URL.RawQuery)
+type StatusResponse struct {
+	Status string `json:"status"`
+}
 
-	if err != nil {
-		responseWriter.WriteHeader(http.StatusBadRequest)
-		_, _ = fmt.Fprintf(responseWriter, "invalid request")
+func HandleGetStatus(responseWriter http.ResponseWriter, request *http.Request) {
+	if authorizeRequest := security.AuthorizeRequest(request); !authorizeRequest.Valid {
+		StatusRespondWith(http.StatusUnauthorized, responseWriter)
 		return
 	}
 
-	responseWriter.WriteHeader(http.StatusOK)
-	_, _ = fmt.Fprintf(responseWriter, "{\"status\": \"OK\"}")
+	StatusRespondWith(http.StatusOK, responseWriter)
+}
+
+func StatusRespondWith(statusCode int, responseWriter http.ResponseWriter) {
+	responseWriter.WriteHeader(statusCode)
+	response := &StatusResponse{Status: http.StatusText(statusCode)}
+	jsonResponse, _ := json.Marshal(response)
+	fmt.Fprintf(responseWriter, string(jsonResponse))
 }
